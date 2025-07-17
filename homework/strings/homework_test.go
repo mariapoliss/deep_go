@@ -8,30 +8,66 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Предположим, что все будут производить копирование
+// буффера только с использованием метода Clone()
 type COWBuffer struct {
 	data []byte
 	refs *int
-	// need to implement
 }
 
+// создать буффер с определенными данными
 func NewCOWBuffer(data []byte) COWBuffer {
-	return COWBuffer{} // need to implement
+	refs := 1
+	return COWBuffer{
+		data: data,
+		refs: &refs,
+	}
 }
 
+// создать новую копию буфера
 func (b *COWBuffer) Clone() COWBuffer {
-	return COWBuffer{} // need to implement
+	*b.refs++
+	return COWBuffer{
+		data: b.data,
+		refs: b.refs,
+	}
 }
 
+// перестать использовать копию буффера
 func (b *COWBuffer) Close() {
-	// need to implement
+	newData := make([]byte, len(b.data))
+	copy(newData, b.data)
+	b.data = newData
+	if *b.refs > 1 {
+		*b.refs--
+		newInt := new(int)
+		b.refs = newInt
+		*b.refs++
+	}
 }
 
+// изменить определенный байт в буффере
 func (b *COWBuffer) Update(index int, value byte) bool {
-	return false // need to implement
+	if index >= len(b.data) || index < 0 {
+		return false
+	}
+	if *b.refs > 1 {
+		newData := make([]byte, len(b.data))
+		copy(newData, b.data)
+		b.data = newData
+
+		*b.refs--
+		newInt := new(int)
+		b.refs = newInt
+		*b.refs++
+	}
+	b.data[index] = value
+	return true
 }
 
+// сконвертировать буффер в строку
 func (b *COWBuffer) String() string {
-	return "" // need to implement
+	return unsafe.String(unsafe.SliceData(b.data), len(b.data))
 }
 
 func TestCOWBuffer(t *testing.T) {
