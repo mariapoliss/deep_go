@@ -10,31 +10,125 @@ import (
 // go test -v homework_test.go
 
 type OrderedMap struct {
-	// need to implement
+	size    int
+	element *element
 }
 
+type element struct {
+	key, value  int
+	left, right *element
+}
+
+// создать упорядоченный словарь
 func NewOrderedMap() OrderedMap {
-	return OrderedMap{} // need to implement
+	return OrderedMap{}
 }
 
+// добавить элемент в словарь
 func (m *OrderedMap) Insert(key, value int) {
-	// need to implement
+	m.size++
+	node := m.element
+	for node != nil {
+		if node.key < key {
+			if node.right == nil {
+				node.right = &element{
+					key:   key,
+					value: value,
+				}
+				return
+			} else {
+				node = node.right
+			}
+		} else if node.key > key {
+			if node.left == nil {
+				node.left = &element{
+					key:   key,
+					value: value,
+				}
+				return
+			} else {
+				node = node.left
+			}
+		}
+	}
+	m.element = &element{
+		key:   key,
+		value: value,
+	}
 }
 
+// удалить элемент из словаря
 func (m *OrderedMap) Erase(key int) {
-	// need to implement
+	m.element = eraseNode(m.element, key, &m.size)
 }
 
+// eraseNode returns root of tree/subtree
+func eraseNode(node *element, key int, size *int) *element {
+	if node == nil {
+		return nil
+	}
+	if node.key == key {
+		*size--
+		if node.left == nil {
+			return node.right
+		}
+		if node.right == nil {
+			return node.left
+		}
+		// right and left != nil
+		var previous *element
+		smallest := node.right
+		for smallest.left != nil {
+			previous = smallest
+			smallest = smallest.left
+		}
+		node.key = smallest.key
+		node.value = smallest.value
+		node.right = eraseNode(previous, smallest.key, new(int))
+	} else if node.key < key {
+		node.right = eraseNode(node.right, key, size)
+	} else {
+		node.left = eraseNode(node.left, key, size)
+	}
+	return node
+}
+
+// проверить существование элемента в словаре
 func (m *OrderedMap) Contains(key int) bool {
-	return false // need to implement
+	node := m.element
+	for node != nil {
+		if node.key == key {
+			return true
+		} else if node.key < key {
+			node = node.right
+		} else if node.key > key {
+			node = node.left
+		}
+	}
+	return false
 }
 
+// получить количество элементов в словаре
 func (m *OrderedMap) Size() int {
-	return 0 // need to implement
+	return m.size
 }
 
+// применить функцию к каждому элементу словаря от меньшего к большему
 func (m *OrderedMap) ForEach(action func(int, int)) {
-	// need to implement
+	if m.element == nil {
+		return
+	}
+	forEachInner(m.element, action)
+}
+
+func forEachInner(node *element, action func(int, int)) {
+	if node.left != nil {
+		forEachInner(node.left, action)
+	}
+	action(node.key, node.value)
+	if node.right != nil {
+		forEachInner(node.right, action)
+	}
 }
 
 func TestCircularQueue(t *testing.T) {
@@ -80,4 +174,11 @@ func TestCircularQueue(t *testing.T) {
 	})
 
 	assert.True(t, reflect.DeepEqual(expectedKeys, keys))
+
+	data.Erase(10)
+	assert.Equal(t, 3, data.Size())
+	assert.True(t, data.Contains(4))
+	assert.True(t, data.Contains(5))
+	assert.True(t, data.Contains(12))
+	assert.False(t, data.Contains(10))
 }
