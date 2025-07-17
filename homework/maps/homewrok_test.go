@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"reflect"
 	"testing"
 
@@ -9,29 +10,30 @@ import (
 
 // go test -v homework_test.go
 
-type OrderedMap struct {
+type OrderedMap[K cmp.Ordered, V any] struct {
 	size    int
-	element *element
+	element *element[K, V]
 }
 
-type element struct {
-	key, value  int
-	left, right *element
+type element[K cmp.Ordered, V any] struct {
+	key         K
+	value       V
+	left, right *element[K, V]
 }
 
 // создать упорядоченный словарь
-func NewOrderedMap() OrderedMap {
-	return OrderedMap{}
+func NewOrderedMap[K cmp.Ordered, V any]() OrderedMap[K, V] {
+	return OrderedMap[K, V]{}
 }
 
 // добавить элемент в словарь
-func (m *OrderedMap) Insert(key, value int) {
+func (m *OrderedMap[K, V]) Insert(key K, value V) {
 	m.size++
 	node := m.element
 	for node != nil {
 		if node.key < key {
 			if node.right == nil {
-				node.right = &element{
+				node.right = &element[K, V]{
 					key:   key,
 					value: value,
 				}
@@ -41,7 +43,7 @@ func (m *OrderedMap) Insert(key, value int) {
 			}
 		} else if node.key > key {
 			if node.left == nil {
-				node.left = &element{
+				node.left = &element[K, V]{
 					key:   key,
 					value: value,
 				}
@@ -51,19 +53,19 @@ func (m *OrderedMap) Insert(key, value int) {
 			}
 		}
 	}
-	m.element = &element{
+	m.element = &element[K, V]{
 		key:   key,
 		value: value,
 	}
 }
 
 // удалить элемент из словаря
-func (m *OrderedMap) Erase(key int) {
+func (m *OrderedMap[K, V]) Erase(key K) {
 	m.element = eraseNode(m.element, key, &m.size)
 }
 
 // eraseNode returns root of tree/subtree
-func eraseNode(node *element, key int, size *int) *element {
+func eraseNode[K cmp.Ordered, V any](node *element[K, V], key K, size *int) *element[K, V] {
 	if node == nil {
 		return nil
 	}
@@ -76,7 +78,7 @@ func eraseNode(node *element, key int, size *int) *element {
 			return node.left
 		}
 		// right and left != nil
-		var previous *element
+		var previous *element[K, V]
 		smallest := node.right
 		for smallest.left != nil {
 			previous = smallest
@@ -94,7 +96,7 @@ func eraseNode(node *element, key int, size *int) *element {
 }
 
 // проверить существование элемента в словаре
-func (m *OrderedMap) Contains(key int) bool {
+func (m *OrderedMap[K, V]) Contains(key K) bool {
 	node := m.element
 	for node != nil {
 		if node.key == key {
@@ -109,19 +111,19 @@ func (m *OrderedMap) Contains(key int) bool {
 }
 
 // получить количество элементов в словаре
-func (m *OrderedMap) Size() int {
+func (m *OrderedMap[K, V]) Size() int {
 	return m.size
 }
 
 // применить функцию к каждому элементу словаря от меньшего к большему
-func (m *OrderedMap) ForEach(action func(int, int)) {
+func (m *OrderedMap[K, V]) ForEach(action func(K, V)) {
 	if m.element == nil {
 		return
 	}
 	forEachInner(m.element, action)
 }
 
-func forEachInner(node *element, action func(int, int)) {
+func forEachInner[K cmp.Ordered, V any](node *element[K, V], action func(K, V)) {
 	if node.left != nil {
 		forEachInner(node.left, action)
 	}
@@ -132,7 +134,7 @@ func forEachInner(node *element, action func(int, int)) {
 }
 
 func TestCircularQueue(t *testing.T) {
-	data := NewOrderedMap()
+	data := NewOrderedMap[int, int]()
 	assert.Zero(t, data.Size())
 
 	data.Insert(10, 10)
